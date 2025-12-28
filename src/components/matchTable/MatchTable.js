@@ -34,7 +34,6 @@ const MatchTable = ({ tournamentId }) => {
 
   const exportToCSV = () => {
     try {
-      // Define CSV headers
       const headers = [
         'Match ID',
         'Round',
@@ -42,27 +41,28 @@ const MatchTable = ({ tournamentId }) => {
         'Team 1',
         'Team 2',
         'Result',
+        'Outcome',
         'Status'
       ];
 
-      // Convert matches to CSV rows
       const csvRows = matches.map(match => [
         match.match_id,
         match.round_name || `Round ${match.round_id}`,
         match.pool || '-',
         match.team1_players,
         match.team2_players,
-        match.match_result,
+        match.outcome === 'walkover'
+          ? `Winner: ${match.winner_team_id} (Walkover)`
+          : match.match_result,
+        match.outcome || 'normal',
         match.match_status.status
       ]);
 
-      // Combine headers and rows
       const csvContent = [
         headers.join(','),
-        ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ...csvRows.map(row => row.map(cell => `"${cell ?? ''}"`).join(','))
       ].join('\n');
 
-      // Create blob and download
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
@@ -71,6 +71,7 @@ const MatchTable = ({ tournamentId }) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
       toast.success('CSV file downloaded successfully');
     } catch (error) {
       console.error('Failed to export CSV:', error);
@@ -89,6 +90,7 @@ const MatchTable = ({ tournamentId }) => {
           Export to CSV
         </button>
       </div>
+
       <div className={stl.tableWrapper}>
         <table className={stl.table}>
           <thead>
@@ -102,6 +104,7 @@ const MatchTable = ({ tournamentId }) => {
               <th>Status</th>
             </tr>
           </thead>
+
           <tbody>
             {matches.map((match) => (
               <tr key={match.match_id}>
@@ -110,7 +113,30 @@ const MatchTable = ({ tournamentId }) => {
                 <td>{match.pool || '-'}</td>
                 <td>{match.team1_players}</td>
                 <td>{match.team2_players}</td>
-                <td>{match.match_result}</td>
+
+                <td>
+                  {match.outcome === 'walkover' ? (
+                    <>
+                      <strong>{match.winner_team_id}</strong>
+                      <span
+                        style={{
+                          marginLeft: 8,
+                          background: '#ffe5e5',
+                          color: '#b00020',
+                          padding: '3px 6px',
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 600
+                        }}
+                      >
+                        Walkover
+                      </span>
+                    </>
+                  ) : (
+                    match.match_result
+                  )}
+                </td>
+
                 <td>
                   <span className={`${stl.status} ${stl[match.match_status.status]}`}>
                     {match.match_status.status}
@@ -119,10 +145,11 @@ const MatchTable = ({ tournamentId }) => {
               </tr>
             ))}
           </tbody>
+
         </table>
       </div>
     </div>
   );
 };
 
-export default MatchTable; 
+export default MatchTable;

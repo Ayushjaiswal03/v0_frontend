@@ -1,198 +1,44 @@
-Overview
+# Khel Club Frontend – Walkover Support
 
-=> This project extends the existing v0 Khel Club tournament management system to support a new match outcome: Walkover.
+## Overview
 
-    The original system only supported matches where both teams played and scores were entered numerically. The goal of this assignment was to understand the existing architecture and scoring flow, and then introduce Walkover support in a way that is clean, scalable, and future-proof, without breaking any existing behavior.
+This frontend is part of the v0 Khel Club tournament management system built using **Next.js**.  
+As part of the Walkover assignment, no UI redesign was done. The focus was on ensuring that the frontend can **clearly display matches that end in a Walkover**, using existing components and patterns.
 
-    While implementing Walkover, I focused on:
+The frontend consumes match and score data from the backend and renders it across fixtures, tables, and exports.
 
-    Understanding how matches, scores, and brackets currently work
-    Keeping scoring logic intact for normal matches
-    Separating match outcome from score calculation
-    Making it easy to add future outcomes like forfeit or bye
-    Understanding the Existing System
+---
 
+## How Walkover Is Displayed
 
-High-Level Architecture
+Walkover handling is designed to be **data-driven**, not hardcoded.
 
-=> The system consists of:
+### Match Table
+- Matches returned with an outcome of `walkover` are displayed clearly in the **Match Table**
+- The `Result` column reflects the walkover outcome instead of a numeric score
+- Match status remains consistent with existing UI states (completed, pending, etc.)
 
-    Backend: Flask + SQLAlchemy + MySQL
+### CSV Export
+- Walkover matches are exported correctly in CSV downloads
+- The result column shows `Walkover` instead of a score
+- No special-case logic was added in the export flow
 
-    Frontend: Next.js (v0 UI)
+This ensures that adding future outcomes (forfeit, bye) will not require UI refactors.
 
-    Database: Relational schema for tournaments, teams, matches, scores
+---
 
-    Matches are connected in a bracket structure using:
+## UI Behavior
 
-    predecessor_1
+- Existing components (`MatchTable`, `Fixtures`) were reused
+- No new UI components were introduced
+- Outcome-based rendering depends purely on API response
+- Numeric score logic remains unchanged for normal matches
 
-    predecessor_2
+---
 
-    successor
+## How to Run Frontend Locally
 
-    When a match is finalized, the winner automatically advances to the next match.
-
-    Existing Scoring Mechanism (Before Changes)
-
-    Before Walkover support, the flow was:
-
-    A match is created with two teams
-
-    Scores are submitted via the /update-score API
-
-    Format: "score": "11-7"
-
-    When final=true is passed:
-
-    The match is marked final
-
-    The winner is decided by comparing numeric scores
-
-    The winner is propagated to the successor match
-
-    Score records are created for both teams
-
-Important limitation:
-=> All logic assumed a numeric score. There was no way to represent a match where one team did not play at all (walkover).
-
-    Design Goals for Walkover Support
-
-    Before writing code, I defined a few constraints:
-    Walkover should not require fake scores like 11-0
-    Normal scoring behavior should remain unchanged
-    Match result logic should be centralized in the backend
-    The solution should support future match outcomes
-
-Frontend changes should be minimal and reuse existing UI
-
-What I Changed (Backend)
-1. Introduced Match Outcome
-
-I added a new concept called Match Outcome, separate from score values.
-
-class MatchOutcome(str, Enum):
-    NORMAL = "normal"
-    WALKOVER = "walkover"
-    FORFEIT = "forfeit"
-
-
-This allows the system to represent how a match ended, not just what the score was.
-
-2. Schema Change (Match Table)
-
-I added a new column to the Match model:
-
-outcome = db.Column(db.String(20), default="normal")
-
-
-Existing matches default to normal
-
-Walkover matches explicitly store walkover
-
-This avoids hard-coding logic based on scores
-
-No existing behavior is affected by this change.
-
-3. Centralized Match Finalization Logic
-
-Instead of tying match completion only to numeric scores, the backend now supports:
-
-Normal match
-
-Scores are required
-
-Winner is determined by comparing scores
-
-Walkover match
-
-No scores are required
-
-Winner is explicitly provided
-
-Match is finalized immediately
-
-Winner advances in the bracket
-
-This keeps scoring logic and outcome logic separate.
-
-4. API Extension (Non-Breaking)
-
-The existing /update-score API continues to work as-is for normal matches.
-
-For walkovers:
-
-The match outcome is set to "walkover"
-
-winner_team_id is set directly
-
-Score creation is skipped
-
-Successor match is still updated correctly
-
-No existing frontend or API consumers break due to this change.
-
-What I Changed (Frontend)
-Displaying Walkover Matches
-
-On the frontend:
-
-Matches with outcome = "walkover" are clearly labeled
-
-A visible “Walkover” indicator is shown
-
-The winning team is still clearly communicated
-
-Existing match and bracket components are reused
-
-No UI redesign was required.
-
-Why This Approach Is Scalable
-
-This solution makes it easy to add new match outcomes in the future:
-
-Add a new value to MatchOutcome
-
-Handle it in the centralized match finalization logic
-
-Optionally add a UI label
-
-No schema redesign or major refactors are required.
-
-Examples of future outcomes:
-
-Forfeit
-
-Bye
-
-Disqualification
-
-Assumptions Made
-
-A walkover always has a clear winner
-
-Walkover matches should advance winners in the bracket
-
-Walkover matches do not require score records
-
-Existing tournament data should continue to work unchanged
-
-What I Would Improve With More Time
-
-Add explicit backend validation for allowed outcome transitions
-
-Add admin UI controls to mark a match as walkover
-
-Add automated tests for match outcome logic
-
-Improve frontend error handling around match finalization
-
-How to Run the Project
-Backend
-cd v0_backend
-python app.py
-
-Frontend
+```bash
 cd v0_frontend
 npm install --legacy-peer-deps
 npm run dev
